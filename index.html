@@ -19,22 +19,10 @@
 <body>
 
 <script type="text/javascript">
-var last_selected = "nobody_at_all";
 
 function select_major_category(category) {
-  if(category.substring(1) == last_selected) return;
-
-  // Set active tab
-  $("#navbar-main li").removeClass("active");
-  $("#navbar-main li a[href='" + category + "/all']").parent().addClass("active");
-
-  // Hide all divs in previous selected category
-  $("div[data-category='" + last_selected + "']:visible").animate({height: 'hide'});
-
-  last_selected = category.substring(1);
-
   // Show all divs in new category
-  $("div[data-category='" + last_selected + "']:hidden").animate({height: 'show'});
+  $("div[data-category='" + category.substring(1) + "']:hidden").show();
 
 }
 
@@ -63,21 +51,13 @@ $(function() {
 
   $("img").addClass("shadow");
 
-  $(window).bind( 'hashchange', function() {
-    spot = location.hash;
-    if(spot == "") { spot = "#professional/all"; location.hash = spot; }
-
-    tags = spot.split("/", 2);
-    select_major_category(tags[0]);
-  });
-
   $(".fancybox").fancybox({ closeClick: true });
   $(".fancybox_iframe").fancybox({
     closeClick: true,
     type: 'iframe'
   });
 
-  $(window).trigger('hashchange');
+  select_major_category("#professional");
 });
 </script>
 
