@@ -25,3 +25,10 @@ paste the existing ones and you should be fine.
 Not really. There's nothing complicated here if you *do* know JavaScript, but
 you can get away with knowing essentially no JavaScript and just cut-and-pasting
 your way through.
+
+## Debugging
+
+To debug this, point your browser at the local file:// URL. For
+instance, under my local source directory, that URL looks like this:
+
+file:///Users/noah.gibbs/src/port_example/index.html
