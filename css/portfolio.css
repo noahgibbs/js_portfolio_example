@@ -7,6 +7,10 @@
   max-width: 200px;
 }
 
+img {
+  box-shadow: 3px 3px 4px #000;
+}
+
 div.curved {
   border-radius:8px;
 }
@@ -29,8 +33,4 @@ div.small_curved {
 
 .clear {
   clear: both;
-}
-
-.shadow {
-  box-shadow: 3px 3px 4px #000;
 }

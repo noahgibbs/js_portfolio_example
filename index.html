@@ -20,20 +20,12 @@
 
 <script type="text/javascript">
 
-function select_major_category(category) {
-  // Show all divs in new category
-  $("div[data-category='" + category.substring(1) + "']:hidden").show();
-
-}
-
 $(function() {
   var project_fields = {organization:true, description:true, tools:true, role:true,
                         dates:true, pictures:true, title:true};
-  var data_selector = "div[data-category=professional],div[data-category=speaking],div[data-category=personal]";
-  var all_projects = $(data_selector);
 
   // Replace every project div with a templatized version
-  all_projects.each(function() {
+  $("div[data-tags]").each(function() {
     var field_objs = {};
     for(var field in project_fields) {
       field_objs[field] = $(this).find("." + field).remove();
@@ -49,15 +41,13 @@ $(function() {
     $(this).find(".title_here").html(title_elt.html());
   });
 
-  $("img").addClass("shadow");
-
   $(".fancybox").fancybox({ closeClick: true });
   $(".fancybox_iframe").fancybox({
     closeClick: true,
     type: 'iframe'
   });
 
-  select_major_category("#professional");
+  $("div[data-tags]:hidden").show();
 });
 </script>
 
@@ -139,7 +129,7 @@ $(function() {
   </div>
 </div>
 
-<div data-category="professional" data-tags="ruby rails cassandra">
+<div data-tags="ruby rails cassandra">
   <div class="title">OnLive Tools, Open-Source and Technical Blog</div>
   <div class="dates"> 2013-2014 </div>
   <div class="organization"> <a href="http://onlive.com">OnLive</a> </div>
