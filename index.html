@@ -64,14 +64,6 @@ function select_major_category(category) {
   $("#tagbox div").remove();
   tags_shown = get_all_tags(last_selected);
 
-  $('<a href="#' + last_selected +
-    '/all"><div class="btn btn-primary">all</div></a>'
-    ).appendTo("#tagbox");
-  for(var tag in tags_shown) {
-    $('<a href="#' + last_selected + '/' + tag +
-      '"><div class="btn btn-primary">' +
-      tag + "</div></a>").appendTo("#tagbox");
-  }
 }
 
 $(function() {
