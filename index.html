@@ -74,38 +74,6 @@ function select_major_category(category) {
   }
 }
 
-function select_tag(tag) {
-  if(tag == last_tag_selected) return;
-
-  $("#tagbox").animate({top: "+=10"}, 'fast').animate({top: "-=10"}, 'fast');
-
-  // Get all elts in top-level category
-  var elts = $("div[data-category='" + last_selected + "']");
-
-  var sub_elts = $([]);
-  var not_sub_elts = $([]);
-
-  if(tag == "all") {
-    sub_elts = elts;
-  } else {
-    elts.each(function() {
-      var tag_list = $(this).attr("data-tags").split(" ");
-      for(var i = 0; i < tag_list.length; i++) {
-        if(tag_list[i] === tag) {
-          sub_elts.push(this);
-          return;
-        }
-      }
-      not_sub_elts.push(this);
-    });
-  }
-
-  not_sub_elts.animate({height: 'hide'});
-  sub_elts.animate({height: 'show'});
-
-  last_tag_selected = tag;
-}
-
 $(function() {
   var project_fields = {organization:true, description:true, tools:true, role:true,
                         dates:true, pictures:true, title:true};
@@ -137,7 +105,6 @@ $(function() {
 
     tags = spot.split("/", 2);
     select_major_category(tags[0]);
-    select_tag(tags[1]);
   });
 
   $(".fancybox").fancybox({ closeClick: true });
