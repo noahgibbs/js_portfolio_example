@@ -1,0 +1,1451 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+  <meta name="description" content="A portfolio of programming and technical projects by JANE DOE" />
+  <link href="css/bootstrap.slate.min.css" media="screen" rel="stylesheet" type="text/css" />
+  <link href="css/portfolio.css" media="screen" rel="stylesheet" type="text/css" />
+  <link href="fancybox/jquery.fancybox.css" media="screen" rel="stylesheet" type="text/css" />
+  <script type="text/javascript"
+    src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js">
+  </script>
+  <script type="text/javascript" src="js/bootstrap.min.js"> </script>
+  <script type="text/javascript" src="fancybox/jquery.fancybox.pack.js"></script>
+  <script type="text/javascript" src="fancybox/jquery.mousewheel-3.0.6.pack.js"></script>
+  <title> JANE DOE's Programming Portfolio </title>
+</head>
+<body>
+
+<script type="text/javascript">
+function get_all_tags(category) {
+  var tags_hash = {};
+
+  $("div[data-category='" + category + "']").each(function(index,elt) {
+    $(elt).attr("data-tags").split(" ").forEach(function(tag) {
+      tags_hash[tag] = true;
+    });
+  });
+
+  return tags_hash;
+}
+
+function find_dates(a) {
+  var date_string = $(a).find("div.dates").html();
+  var all_matches = date_string.match(/\d{4}/g);
+
+  var first_date = parseInt(Math.min.apply(null, all_matches));
+  var last_date = parseInt(Math.max.apply(null, all_matches));
+
+  return [first_date, last_date];
+}
+
+function sort_child_nodes(selector) {
+  var children = $(selector);
+  var parent = children.parent();
+
+  var child_array = [];
+  children.each(function() {
+    child_array.push(this);
+    $(this).remove();
+  });
+
+  // Sort on the most recent year found.
+  // With equal most recent years, sort on the least recent.
+  child_array.sort(function(a, b) {
+    var a_dates = find_dates(a);
+    var first_a = a_dates[0];
+    var last_a = a_dates[1];
+    var b_dates = find_dates(b);
+    var first_b = b_dates[0];
+    var last_b = b_dates[1];
+
+    if(last_a === last_b)
+      return first_b - first_a;
+
+    return last_b - last_a;
+  });
+
+  for(var i = 0; i < child_array.length; i++) {
+    $(parent).append(child_array[i]);
+  }
+}
+
+var last_selected = "nobody_at_all";
+var last_tag_selected = "nobody_at_all";
+var tags_shown = {};
+
+function select_major_category(category) {
+  if(category.substring(1) == last_selected) return;
+
+  // Set active tab
+  $("#navbar-main li").removeClass("active");
+  $("#navbar-main li a[href='" + category + "/all']").parent().addClass("active");
+
+  // Hide all divs in previous selected category
+  $("div[data-category='" + last_selected + "']:visible").animate({height: 'hide'});
+
+  last_tag_selected = "nobody_at_all";
+  last_selected = category.substring(1);
+
+  // Show all divs in new category
+  $("div[data-category='" + last_selected + "']:hidden").animate({height: 'show'});
+
+  $("#tagbox div").remove();
+  tags_shown = get_all_tags(last_selected);
+
+  $('<a href="#' + last_selected +
+    '/all"><div class="btn btn-primary">all</div></a>'
+    ).appendTo("#tagbox");
+  for(var tag in tags_shown) {
+    $('<a href="#' + last_selected + '/' + tag +
+      '"><div class="btn btn-primary">' +
+      tag + "</div></a>").appendTo("#tagbox");
+  }
+}
+
+function select_tag(tag) {
+  if(tag == last_tag_selected) return;
+
+  $("#tagbox").animate({top: "+=10"}, 'fast').animate({top: "-=10"}, 'fast');
+
+  // Get all elts in top-level category
+  var elts = $("div[data-category='" + last_selected + "']");
+
+  var sub_elts = $([]);
+  var not_sub_elts = $([]);
+
+  if(tag == "all") {
+    sub_elts = elts;
+  } else {
+    elts.each(function() {
+      var tag_list = $(this).attr("data-tags").split(" ");
+      for(var i = 0; i < tag_list.length; i++) {
+        if(tag_list[i] === tag) {
+          sub_elts.push(this);
+          return;
+        }
+      }
+      not_sub_elts.push(this);
+    });
+  }
+
+  not_sub_elts.animate({height: 'hide'});
+  sub_elts.animate({height: 'show'});
+
+  last_tag_selected = tag;
+}
+
+$(function() {
+  var project_fields = {organization:true, description:true, tools:true, role:true,
+                        dates:true, pictures:true, title:true};
+  var data_selector = "div[data-category=professional],div[data-category=speaking],div[data-category=personal]";
+  var all_projects = $(data_selector);
+
+  sort_child_nodes(data_selector);
+
+  // Replace every project div with a templatized version
+  all_projects.each(function() {
+    var field_objs = {};
+    for(var field in project_fields) {
+      field_objs[field] = $(this).find("." + field).remove();
+    }
+    $(this).attr("class", $("#template").attr("class"));
+    $(this).html($("#template").html()).hide();
+    for(var field in project_fields) {
+      var spot = $(this).find("." + field + "_here");
+      field_objs[field].appendTo(spot);
+    }
+    var title_elt = field_objs["title"].length > 0 ?
+      field_objs["title"] : field_objs["organization"];
+    $(this).find(".title_here").html(title_elt.html());
+  });
+
+  $("img").addClass("shadow");
+
+  $(window).bind( 'hashchange', function() {
+    spot = location.hash;
+    if(spot == "") { spot = "#professional/all"; location.hash = spot; }
+
+    tags = spot.split("/", 2);
+    select_major_category(tags[0]);
+    select_tag(tags[1]);
+  });
+
+  $(".fancybox").fancybox({ closeClick: true });
+  $(".fancybox_iframe").fancybox({
+    closeClick: true,
+    type: 'iframe'
+  });
+
+  $(window).trigger('hashchange');
+});
+</script>
+
+    <div class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <a href="http://static.angelbob.com/portfolio" class="navbar-brand">Noah Gibbs - Software Portfolio</a>
+          <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+        </div>
+        <div class="navbar-collapse collapse" id="navbar-main">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="#professional/all">Professional</a>
+            </li>
+            <li>
+              <a href="#speaking/all">Speaking</a>
+            </li>
+            <li>
+              <a href="#personal/all">Personal</a>
+            </li>
+          </ul>
+
+          <ul class="nav navbar-nav navbar-right">
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="download">Other Links <span class="caret"></span></a>
+              <ul class="dropdown-menu" aria-labelledby="download">
+                <li>
+                  <a href="http://static.angelbob.com/resume">Resume</a>
+                </li>
+                <li>
+                  <a href="http://codefol.io">Blog</a>
+                </li>
+                <li>
+                  <a href="http://rebuilding-rails.com">Rebuilding Rails (my book)</a>
+                </li>
+                <li>
+                  <a href="http://github.com/noahgibbs">GitHub</a>
+                </li>
+                <li>
+                  <a href="http://twitter.com/codefolio">Twitter</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+        </div>
+      </div>
+    </div>
+
+
+    <div class="container"><div class="row">
+
+<div style="height:80px;"> </div>
+
+<div id="tagbox" style="height:80px;"> </div> <!-- For sub-buttons -->
+
+<div id="template" class="panel panel-warning" style="display:none">
+  <div class="panel-heading"><h3><div class="title_here"></div></h3></div>
+  <div class="panel-body">
+    <div class="row well">
+      <div class="col-md-4"><div class="dates_here lead">
+        <b>Dates:</b>
+      </div></div>
+      <div class="col-md-8"><div class="description_here lead">
+        <b>Description:</b>
+      </div></div>
+    </div>
+
+    <div class="row well">
+      <div class="col-md-4"><div class="tools_here lead">
+        <b>Tools:</b>
+      </div></div>
+      <div class="col-md-4"><div class="role_here lead">
+        <b>Role:</b>
+      </div></div>
+      <div class="col-md-4"><div class="organization_here lead">
+        <b>Organization:</b>
+      </div></div>
+    </div>
+
+    <div class="row"><div class="col-md-12">
+      <div class="alert alert-success">
+        <div class="pictures_here lead">
+          <b>Pictures:</b><br/>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="ruby rails cassandra">
+  <div class="title">OnLive Tools, Open-Source and Technical Blog</div>
+  <div class="dates"> 2013-2014 </div>
+  <div class="organization"> <a href="http://onlive.com">OnLive</a> </div>
+  <div class="description">
+    While at OnLive, I coordinated engineering and legal resources to
+    create
+    new tools to open-source, scrub and open-source
+    older code and start an engineering blog.  I also hosted
+    multiple meetups at OnLive. <br/> I
+    removed several procedural and legal obstacles.  I wrote most
+    blog content. <br/>
+    See <a href="http://github.com/onlive">the OnLive GitHub
+    repository</a> and <a href="http://engineering.onlive.com">the
+    OnLive Engineering blog</a>.
+  </div>
+  <div class="tools">
+    Primarily Ruby- and Cassandra-based
+  </div>
+  <div class="role"> Lead Engineer and Team Lead </div>
+  <div class="pictures">
+    <a class="fancybox" href="ol-blog-4.png">
+      <img src="ol-blog-4.png" /> </a>
+    <a class="fancybox" href="ol-blog-5.png">
+      <img src="ol-blog-5.png" /> </a>
+    <a class="fancybox" href="ol-blog-6.png">
+      <img src="ol-blog-6.png" /> </a>
+    <a class="fancybox" href="ol-blog-7.png">
+      <img src="ol-blog-7.png" /> </a>
+    <a class="fancybox" href="ol-blog-2.png">
+      <img src="ol-blog-2.png" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="ruby rails cassandra">
+  <div class="title">OnLive Analytics</div>
+  <div class="dates"> 2013-2014 </div>
+  <div class="organization"> <a href="http://onlive.com">OnLive</a> </div>
+  <div class="description">
+    I served as OnLive's head of Analytics &mdash; the old team was
+    gone before I arrived.  I analyzed, documented and debugged the system, and then
+    began making upgrades while recruiting a team.  The existing system was
+    enormous, and much cleanup work was replacing underused technologies
+    with smaller, simpler replacements.  I also supported the Business
+    Intelligence team's needs for new data sources and infrastructure.
+  </div>
+  <div class="tools">
+    <p>
+      <b>Existing:</b> Pentaho Reports, Kettle, Coral8, Esper, InfoBright,
+        sharded MySQL, Grails, Java, Tomcat </p>
+    <p><b>New work:</b> Ruby, Rails, Cassandra, ZenDesk, iPost</p>
+  </div>
+  <div class="role"> Lead Engineer and Team Lead </div>
+  <div class="pictures">
+    <a class="fancybox" href="ol-ana-1.png">
+      <img src="ol-ana-1.png" /> </a>
+    <a class="fancybox" href="ol-ana-2.png">
+      <img src="ol-ana-2.png" /> </a>
+    <a class="fancybox" href="ol-ana-3.png">
+      <img src="ol-ana-3.png" /> </a>
+    <a class="fancybox" href="ol-ana-4.png">
+      <img src="ol-ana-4.png" /> </a>
+    <a class="fancybox" href="ol-ana-5.png">
+      <img src="ol-ana-5.png" /> </a>
+    <a class="fancybox" href="ol-ana-6.png">
+      <img src="ol-ana-6.png" /> </a>
+    <a class="fancybox" href="ol-perfectum-1.png">
+      <img src="ol-perfectum-1.png" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="ruby rails cassandra">
+  <div class="title">Valhalla, a Ruby SOA Platform</div>
+  <div class="dates"> 2013 </div>
+  <div class="organization"> <a href="http://onlive.com">OnLive</a> </div>
+  <div class="description">
+    Valhalla was a prototype to replace an existing
+    legacy allocation and scheduling system for back-end servers.
+    It used a novel dual-mode SOA/monolithic architecture
+    based on <a href="http://github.com/onlive/olaf">Olaf</a>.
+  </div>
+  <div class="tools"> Ruby, Sinatra, Cassandra, DataMapper, Git </div>
+  <div class="role"> Lead Rubyist; Cassandra and ORM Expert </div>
+  <div class="pictures">
+    <a class="fancybox" href="olaf-code-1.png">
+      <img src="olaf-code-1.png" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="ruby rails cassandra">
+  <div class="title">Hastur, a Cassandra-Backed Monitoring System</div>
+  <div class="dates"> 2011-2013 </div>
+  <div class="organization"> <a href="http://ooyala.com">Ooyala</a> </div>
+  <div class="description"> <a href="http://github.com/ooyala/hastur-server">
+    Hastur</a>, a Cassandra-backed metrics system, uses
+    ZeroMQ transport and has front ends in Ruby, Go, Scala and C.
+    At peak, it pushed over 50,000 production messages/second.
+    Hastur features powerful retrieval and dashboards.
+  </div>
+  <div class="tools"> Ruby, Rails, git, Cassandra, D3.js, various </div>
+  <div class="role"> Co-architect with <a
+    href="http://github.com/tobert">Al Tobey</a> </div>
+  <div class="pictures">
+    <a class="fancybox" href="overwatch-1.png">
+      <img src="overwatch-1.png" alt="Overwatch Dashboard 1" /> </a>
+    <a class="fancybox" href="overwatch-2.png">
+      <img src="overwatch-2.png" alt="Overwatch Dashboard 2" /> </a>
+    <a class="fancybox" href="overwatch-3.png">
+      <img src="overwatch-3.png" alt="Overwatch Dashboard 3" /> </a>
+    <a class="fancybox" href="hastur-portal.png">
+      <img src="hastur-portal.png" alt="Hastur Front Page" /> </a>
+    <a class="fancybox" href="hastur_dash_1.png">
+      <img src="hastur_dash_1.png" alt="Hastur Dashboard 1" /> </a>
+    <a class="fancybox" href="hastur_dash_2.png">
+      <img src="hastur_dash_2.png" alt="Hastur Dashboard 2" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="ruby rails cassandra">
+  <div class="title">Analytics for Ooyala</div>
+  <div class="dates"> 2011-2012 </div>
+  <div class="organization"> <a href="http://ooyala.com">Ooyala</a> </div>
+  <div class="description"> Ooyala's Backlot </div>
+  <div class="tools"> Ruby, Rails, git, Cassandra, MySQL, others </div>
+  <div class="role"> Analytics and Big Data Engineer </div>
+  <div class="pictures">
+    <a class="fancybox" href="ooyala-backlot-analytics-1.png">
+      <img src="ooyala-backlot-analytics-1.png" alt="Ooyala Backlot 1" /> </a>
+    <a class="fancybox" href="ooyala-backlot-2.jpg">
+      <img src="ooyala-backlot-2.jpg" alt="Ooyala Backlot 2" /> </a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby">
+  <div class="title"><a href="http://onlive.com">OnLive</a> Recruiting Talks</div>
+  <div class="dates"> 2013-2014 </div>
+  <div class="description"> I gave talks on Ruby concurrency (threads and processes),
+    Ruby app servers and Ruby HTTP app architecture at local meetups to recruit
+    new Rubyists to OnLive. I also arranged a private meeting with
+    Matz (Yukihiro Matsumoto, creator of Ruby) for OnLive while he was
+    in the US.
+    <a href="https://docs.google.com/presentation/d/1CbgLpUdnGYzChj3FRjvCT6KKmQQHz2tFtREiZtA89Ik">(slides)</a>
+    <a href="https://docs.google.com/presentation/d/1lpOxdGkK3gU_wBts4vEMQRFujc3MQq4sv677YT-oUZo">(slides)</a>
+    <a href="https://docs.google.com/presentation/d/1CAr9cWurjT5pMxEyb_hMDwZ8XVm6f61wA2YiVvieXIw">(slides)</a>
+  </div>
+  <div class="tools"> Ruby, Rack, Rails </div>
+  <div class="role"> Author/Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="meetup_photo.jpeg">
+      <img src="meetup_photo.jpeg" /></a>
+    <a class="fancybox" href="meetup_photo_2.jpeg">
+      <img src="meetup_photo_2.jpeg" /></a>
+    <a class="fancybox" href="recruiting_slide_1.png">
+      <img src="recruiting_slide_1.png" /></a>
+    <a class="fancybox" href="recruiting_slide_2.png">
+      <img src="recruiting_slide_2.png" /></a>
+    <a class="fancybox" href="recruiting_slide_3.png">
+      <img src="recruiting_slide_3.png" /></a>
+    <a class="fancybox" href="recruiting_slide_4.png">
+      <img src="recruiting_slide_4.png" /></a>
+    <a class="fancybox" href="matz-photo.jpg">
+      <img src="matz-photo.jpg" /></a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby">
+  <div class="title">The Littlest ORM <a href="http://gogaruco.com">(GoGaRuCo)</a></div>
+  <div class="dates"> 2013 </div>
+  <div class="description"> "The Littlest ORM",
+    a talk on building a simple ORM in Ruby, with full
+    source code.  Delivered at <a href="http://gogaruco.com">GoGaRuCo 2013</a>
+    and later for the TorontoRB Ruby Meetup.
+    <a href="http://www.youtube.com/watch?v=Uh5MYvNXt0A">(GoGaRuCo video on YouTube)</a>
+  </div>
+  <div class="tools"> Ruby, Rack, Rails </div>
+  <div class="role"> Author/Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="littlest-orm-1.png">
+      <img src="littlest-orm-1.png" /></a>
+    <a class="fancybox" href="littlest-orm-2.png">
+      <img src="littlest-orm-2.png" /></a>
+    <a class="fancybox" href="littlest-orm-3.png">
+      <img src="littlest-orm-3.png" /></a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby">
+  <div class="title">OnLive Talks on Ruby and Distributed Systems</div>
+  <div class="dates"> 2013 </div>
+  <div class="organization"> <a href="http://onlive.com">OnLive</a>
+    </div>
+  <div class="description"> Many talks on many topics at my workplace,
+    including:
+    <ul>
+      <li> Ruby Concurrency, Threads and Processes </li>
+      <li> Two-Week Tests in 30 Seconds (Mocking Time) </li>
+      <li> Cassandra SSTables and Internal Structures </li>
+      <li> Cassandra Consistency: All the Details </li>
+      <li> ZooKeeper: The Biggest Mutex You Ever Saw </li>
+      <li> The CAP Theorem </li>
+      <li> Getting to Rails 3 </li>
+      <li> Git Theory and Practice </li>
+      <li> Various other Ruby and Distributed Systems talks </li>
+    </ul>
+  </div>
+  <div class="tools"> Ruby, Rack, Rails, Cassandra, ZooKeeper, Git </div>
+  <div class="role"> Author/Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="zk-mutex-1.png">
+      <img src="zk-mutex-1.png" /></a>
+    <a class="fancybox" href="zk-mutex-2.png">
+      <img src="zk-mutex-2.png" /></a>
+    <a class="fancybox" href="tell-it-1.png">
+      <img src="tell-it-1.png" /></a>
+    <a class="fancybox" href="tell-it-2.png">
+      <img src="tell-it-2.png" /></a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby">
+  <div class="title">Rack in Every Framework</div>
+  <div class="dates"> 2013 </div>
+  <div class="organization"> Given at <a href="http://elance.com">eLance</a>
+    and later several other places.
+    </div>
+  <div class="description"> Rack in Every Framework - writing
+    Rack endpoints and middleware, and integrating them in various
+    ways with various frameworks
+    <a href="http://portal.sliderocket.com/AIMWD/rack-middleware-with-any-framework">(Slides)</a>.
+  </div>
+  <div class="tools"> Ruby, Rack, Rails </div>
+  <div class="role"> Author/Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="middleware_any_framework_1.png">
+      <img src="middleware_any_framework_1.png" alt="Picture of a slide" /> </a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby cassandra">
+  <div class="title">Hastur: Open-Source Scalable Metrics with Cassandra</div>
+  <div class="dates"> 2012 </div>
+  <div class="organization"> <a href="http://ooyala.com">Ooyala</a> </div>
+  <div class="description"> &quot;Hastur: Open-Source Scalable Metrics with
+    Cassandra,&quot; from the
+      <a href="http://www.datastax.com/events/cassandrasummit2012/presentations">Cassandra Summit 2012</a>
+      <a href="http://www.youtube.com/watch?v=r2nGBUuvVmc&feature=youtu.be">(Video)</a>
+      <a href="http://www.datastax.com/wp-content/uploads/2012/08/C2012-Hastur-NoahGibbs.pdf">
+        (Slides as PDF)</a> (converted from Keynote, slightly odd). <br/>
+    This is primarily a Cassandra architecture presentation, about how to
+    store a complex and highly-indexed time series in Cassandra.
+  </div>
+  <div class="tools"> Ruby, Cassandra </div>
+  <div class="role"> Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="hastur_slide_1.png">
+      <img src="hastur_slide_1.png" alt="Hastur architecture slide" /> </a>
+    <a class="fancybox" href="hastur_slide_2.png">
+      <img src="hastur_slide_2.png" alt="Hastur architecture slide" /> </a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby cassandra">
+  <div class="title">Ruby Big Data Tools at Ooyala (<a href="http://gogaruco.com">GoGaRuCo</a> lightning talk)</div>
+  <div class="dates"> 2011 </div>
+  <div class="organization"> <a href="http://ooyala.com">Ooyala</a> </div>
+  <div class="description"> Ruby Big Data Tools at Ooyala, given as a talk
+    at <a href="http://gogaruco.com">GoGaRuCo 2011</a>.
+  </div>
+  <div class="tools"> Ruby, Hadoop, Cassandra, LogStash </div>
+  <div class="role"> Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="ruby-big-data-slide.png">
+      <img src="ruby-big-data-slide.png" alt="Ruby Big Data at Ooyala" /> </a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby">
+  <div class="title">Ruby Gotchas</div>
+  <div class="dates"> 2012 </div>
+  <div class="organization"> <a href="http://ooyala.com">Ooyala</a>
+    </div>
+  <div class="description"> Ruby Gotchas - surprises when
+    coming to Ruby from other languages.
+    Given as a lecture with
+    <a href="http://portal.sliderocket.com/BKHPY/Ruby-Gotchas">slides</a>.
+  </div>
+  <div class="tools"> Ruby </div>
+  <div class="role"> Author/Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="gotchas-1.png">
+      <img src="gotchas-1.png" alt="Ruby Gotchas" /> </a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby rails">
+  <div class="title">The Ruby Hangout &mdash; Various Rack Talks</div>
+  <div class="dates"> 2013 </div>
+  <div class="organization"> <a href="http://www.therubyhangout.com">The Ruby Hangout</a>
+    </div>
+  <div class="description"> Just Build Your Server on Rack (and the Five-Minute
+    Ruby Framework).
+    <a href="http://www.youtube.com/watch?v=evDJMLb1d28&feature=youtu.be">(YouTube video)</a>,
+    <a href="http://portal.sliderocket.com/AIMWD/Just-Build-On-Rack">(slides 1)</a>,
+    <a href="http://portal.sliderocket.com/AIMWD/Five-Minute-Framework">(slides 2)</a>.
+    Given as an informal talk plus questions for The Ruby Hangout.
+  </div>
+  <div class="tools"> Ruby, Rack </div>
+  <div class="role"> Author/Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="hangout-1.png">
+      <img src="hangout-1.png" alt="The Ruby Hangout" /> </a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby">
+  <div class="title">Building Ruby Castles in the Clouds</div>
+  <div class="dates"> 2013 </div>
+  <div class="organization"> <a href="http://sebastianmarshall.com">Sebastian Marshall</a>'s <a href="http://givegetwin.com">GiveGetWin</a>
+    </div>
+  <div class="description"> Building Ruby Castles in the Clouds,
+    an interview with Sebastian Marshall
+    <a href="http://sebastianmarshall.com/building-ruby-castles-in-the-clouds-by-noah-gibbs">(text interview)</a>.
+    Sebastian runs a popular blog on self-improvement and strategy.
+  </div>
+  <div class="tools"> Ruby </div>
+  <div class="role"> Interviewee </div>
+  <div class="pictures">
+    <a class="fancybox" href="castle-clouds-1.png">
+      <img src="castle-clouds-1.png" /></a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby">
+  <div class="title">Ruby Self and Instance Variables</div>
+  <div class="dates"> 2011 </div>
+  <div class="organization"> <a href="http://ooyala.com">Ooyala</a>
+    </div>
+  <div class="description"> Ruby Self and Instance Variables.
+    Given as a lecture with
+    <a href="http://portal.sliderocket.com/AIMWD/Ruby-Self-Variable">slides</a>.
+  </div>
+  <div class="tools"> Ruby, RVM, Bundler </div>
+  <div class="role"> Author/Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="instance-var-slide.png">
+      <img src="instance-var-slide.png" alt="Self and Instance Vars" /> </a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby">
+  <div class="title">The Five-Minute Ruby Web Framework</div>
+  <div class="dates"> 2012 </div>
+  <div class="organization"> <a href="http://hackerdojo.com">Hacker Dojo</a>
+    Lightning Talks</div>
+  <div class="description"> The Five-Minute Ruby Web Framework.
+    Given as a lightning talk with
+    <a href="http://portal.sliderocket.com/AIMWD/Five-Minute-Framework">slides</a>.
+  </div>
+  <div class="tools"> Ruby, Bundler </div>
+  <div class="role"> Author/Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="five-min-1.png">
+      <img src="five-min-1.png" /> </a>
+    <a class="fancybox" href="five-min-2.png">
+      <img src="five-min-2.png" /> </a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="ruby">
+  <div class="title">Skillshares at Ooyala</div>
+  <div class="dates"> 2011-2012 </div>
+  <div class="organization"> <a href="http://ooyala.com">Ooyala</a>
+    </div>
+  <div class="description"> Various skillshares and presentations at Ooyala:
+    <ul>
+      <li> Ooyala Development Process and Tools (new hire training, recurring) </li>
+      <li> RVM and Bundler at Ooyala </li>
+      <li> Ruby Performance and Profiling </li>
+      <li> Lessons from Glowworm </li>
+      <li> Using Hastur </li>
+      <li> Build a Gorgeous Web-App Dashboard in Under Ten Minutes
+        With Hastur::Rack </li>
+      <li> ZeroMQ, an Overview </li>
+      <li> Glowworm (intro, usage) </li>
+      <li> Design Reviews: Hastur, Chef for App Deploy </li>
+    </ul>
+  </div>
+  <div class="tools"> Ruby, RVM, Bundler, SlideRocket, Cassandra, ZeroMQ </div>
+  <div class="role"> Author/Speaker </div>
+  <div class="pictures">
+    <a class="fancybox" href="glowworm-3.png">
+      <img src="glowworm-3.png" /> </a>
+    <a class="fancybox" href="glowworm-4.png">
+      <img src="glowworm-4.png" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="rails ruby">
+  <div class="title"> Consulting for Serpikko </div>
+  <div class="dates"> 2012 </div>
+  <div class="organization"> Serpikko (then called ScamArmour) </div>
+  <div class="description"> Part-time freelance work on ScamArmour's
+    prototype web site.  Pre-funding company, rescue job.
+  </div>
+  <div class="tools"> Rails, Mechanize </div>
+  <div class="role"> Lead programmer, briefly </div>
+  <div class="pictures">
+    <a class="fancybox" href="scamarmour-1.png">
+      <img src="scamarmour-1.png" alt="ScamArmour 1" /> </a>
+    <a class="fancybox" href="scamarmour-2.png">
+      <img src="scamarmour-2.png" alt="ScamArmour 2" /> </a>
+    <a class="fancybox" href="scamarmour-3.png">
+      <img src="scamarmour-3.png" alt="ScamArmour 3" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="rails ruby">
+  <div class="title">Ruby on Rails Instructor, CMU Silicon Valley</div>
+  <div class="dates"> 2011-2012 </div>
+  <div class="organization"> <a
+  href="http://sv.cmu.edu">Carnegie Mellon University West</a>
+    </div>
+  <div class="description"> Tutoring in Ruby on Rails
+    for masters students in the Master of Software Engineering
+    program at CMU's Silicon Valley campus, 2011 and 2012.  Part-time. </div>
+  <div class="tools"> Rails, RSpec, RubyMine, various </div>
+  <div class="role"> Tutor and debugger </div>
+  <div class="pictures">
+    <a href="cmu-west.jpg" class="fancybox"><img src="cmu-west.jpg" /></a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="ruby">
+  <div class="title">Ooyala Open-Source and Tools</div>
+  <div class="dates"> 2011-2013 </div>
+  <div class="organization"> <a href="http://ooyala.com">Ooyala</a>
+    </div>
+  <div class="description"> Various projects, usually open-source,
+    including <a href="http://github.com/ooyala/hastur-server">Hastur</a>,
+    Glowworm, <a href="http://github.com/ooyala/nodule">Nodule</a>,
+    Nimrod, Tortoise,
+    <a href="http://github.com/ooyala/sequel_rails_migrations">Sequel
+      Rails Migrations</a>, a documentation server,
+    MapReduce Framework,
+    <a href="http://github.com/ooyala/barkeep">Barkeep</a>,
+    <a href="http://github.com/ooyala/ecology">Ecology</a>,
+    <a href="http://github.com/ooyala/termite">Termite</a>.  See
+    <a href="http://github.com/ooyala">Ooyala's GitHub repo</a>
+    for all the released projects </div>
+  <div class="tools"> Ruby, RVM, Bundler, various </div>
+  <div class="role"> Sole author or co-author &mdash; varies
+    by project </div>
+  <div class="pictures">
+    <a class="fancybox" href="glowworm-1.png">
+      <img src="glowworm-1.png" alt="Glowworm control panel 1" /> </a>
+    <a class="fancybox" href="glowworm-2.png">
+      <img src="glowworm-2.png" alt="Glowworm control panel 2" /> </a>
+    <a class="fancybox" href="yarddoc-1.png">
+      <img src="yarddoc-1.png" alt="Documentation Server 1" /> </a>
+    <a class="fancybox" href="yarddoc-2.png">
+      <img src="yarddoc-2.png" alt="Documentation Server 2" /> </a>
+  </div>
+</div>
+
+<div data-category="speaking" data-tags="rails">
+  <div class="title">Replacing Java Incrementally with JRuby</div>
+  <div class="dates"> 2010 </div>
+  <div class="organization"> <a href="http://on-site.com">On-Site Manager, Inc</a>
+    </div>
+  <div class="description"> A talk, &quot;Replacing Java Incrementally with
+    JRuby&quot;, delivered at LinkedIn's
+    campus.  It's about our JRuby work at On-Site.
+    (<a href="http://portal.sliderocket.com/AIMWD/Replacing-Java-Incrementally">slide deck</a>) </div>
+  <div class="tools"> JRuby </div>
+  <div class="role"> Speaker </div>
+  <div class="pictures">
+    <a href="http://www.youtube.com/watch?v=l3jz8OqdBd0">
+      <img src="me_speaking.png"
+           alt="a picture of me speaking" /> (link to YouTube) </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="rails">
+  <div class="title">On-Site.com</div>
+  <div class="dates"> 2009 - 2011 </div>
+  <div class="organization"> <a href="http://on-site.com">On-Site Manager, Inc</a>
+    </div>
+  <div class="description"> On-Site.com, a web site for the multifamily
+    unit rental industry </div>
+  <div class="tools"> Ruby on Rails, JRuby, Java, JSP, Linux, RSpec,
+    Shoulda, jQuery, git </div>
+  <div class="role"> Engineer, site team </div>
+  <div class="pictures">
+    <a class="fancybox" href="OnSite-scr1.png">
+      <img src="OnSite-scr1.png" alt="On-Site front page" /> </a>
+    <a class="fancybox" href="OnSite-scr2.png">
+      <img src="OnSite-scr2.png" alt="On-Site user search (dev)" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="c mobile">
+  <div class="title">Emblaze Mobile Operating System</div>
+  <div class="dates"> 2008 - 2009 </div>
+  <div class="organization"> <a href="http://access-company.com">ACCESS
+    Systems Americas, purchaser of PalmSource</a> </div>
+  <div class="description">
+    <a href="http://www.popgadget.net/2008/10/emblaze_mobile.php">
+    Mobile phone project,</a>
+    <a href="http://www.engadget.com/2009/11/24/emblazes-first-else-unveiled-in-london-promises-to-be-a-game-c/">later called</a>
+    <a href="http://www.firstelse.com">Emblaze First Else</a>,
+    later repackaged software-only as the
+    <a href="http://alp.access-company.com/ELSE/index.html">Else
+      Intuition</a> platform.  This was powered by ALP, but
+    involved a complete UI and graphics rewrite.
+  </div>
+  <div class="tools"> GObject, Clutter, OpenGL, C, Linux, Perforce </div>
+  <div class="role"> Co-architect with Justin Morey </div>
+  <div class="pictures">
+    <a class="fancybox" href="emblaze-else-1.jpg">
+      <img src="emblaze-else-1.jpg" alt="Emblaze Else" /> </a>
+    <a class="fancybox" href="emblaze-else-2.jpg">
+      <img src="emblaze-else-2.jpg" alt="Emblaze Else" /> </a>
+    <a class="fancybox" href="emblaze-else-3.jpg">
+      <img src="emblaze-else-3.jpg" alt="Emblaze Else" /> </a>
+    <a class="fancybox" href="emblazeedelweiss.jpg">
+      <img src="emblazeedelweiss.jpg"
+           alt="Early prototype hardware running ALP 3.0" /></a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="c mobile">
+  <div class="title">ACCESS Linux Platform, a Successor to PalmOS</div>
+  <div class="dates"> 2007 - 2008 </div>
+  <div class="organization"> <a href="http://access-company.com">ACCESS
+    Systems Americas, purchaser of PalmSource</a> </div>
+  <div class="description"> ACCESS Linux Platform, including
+    Tasks, Memos, Photos and Attention Manager </div>
+  <div class="tools"> GTK, C, Linux, Coverity, Perforce </div>
+  <div class="role"> Senior OS Engineer </div>
+  <div class="pictures">
+    <a href="ALP1.png" class="fancybox">
+      <img alt="ALP Screenshot" src="ALP1.png" /> </a>
+    <a href="ALP2.png" class="fancybox">
+      <img alt="ALP Screenshot 2" src="ALP2.png" /> </a>
+    <a href="ALP3.png" class="fancybox">
+      <img alt="ALP Screenshot 3" src="ALP3.png" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="c">
+  <div class="title">PeakStream, Inc.</div>
+  <div class="dates"> 2006 - 2007 </div>
+  <div class="organization"> <a href="http://arstechnica.com/business/news/2007/06/google-buys-peakstream-inc.ars">PeakStream</a>,
+       now <a href="http://www.theregister.co.uk/2007/06/05/google_buys_peakstream">part of Google</a></div>
+  <div class="description"> CodeBaby, a Python template system for C and C++ source-code generation (and a few other projects) </div>
+  <div class="tools"> C, C++, Python, Linux, SVN </div>
+  <div class="role"> Primary author and maintainer </div>
+  <div class="pictures">
+    <a href="peakstream.png" class="fancybox"><img src="peakstream.png" /></a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="c mobile windows">
+  <div class="title">Ultra-Fast Zoomable Graphics for SugarSync Mobile</div>
+  <div class="dates"> 2005 - 2006 </div>
+  <div class="organization"> SharpCast, now <a href="http://www.sugarsync.com">SugarSync</a> </div>
+  <div class="description"> A Photos product, now called SugarSync.
+      I integrated
+      <a href="http://www.kakadusoftware.com/">Kakadu's implementation</a>
+      of JPEG2000 and prototyped the same with
+      <a href="http://www.luratech.com/en/solutions/applications/data-compression-imaging-with-jpeg-2000/">LuraTech</a>
+      as well.
+      I also handled scaling, zooming and cropping, for
+      which I wrote custom very fast fixed-point image libraries.
+      My implementation was shown off within Palm to demonstrate,
+      &quot;hey, these new Windows phones have a lot of horsepower!  Look
+      how fast the graphics can be!&quot;
+  </div>
+  <div class="tools"> C++, libjpeg, Visual Studio, Win32, Windows Mobile,
+    Windows CE, JPEG2000 </div>
+  <div class="role"> Co-author (2-man team), focused on graphics </div>
+  <div class="pictures">
+       Win32: <a href="sharpcast1.jpg" class="fancybox">
+           <img src="sharpcast1.jpg" /></a>
+        <a href="sharpcast2.jpg" class="fancybox">
+           <img src="sharpcast2.jpg" /></a> <br/>
+      Windows Mobile: <a href="scmobile1.png" class="fancybox">
+           <img src="scmobile1.png" /></a>
+        <a href="scmobile2.png" class="fancybox">
+           <img src="scmobile2.png" /></a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="c mobile palmos">
+  <div class="title">TapWave Graphics Hardware Acceleration</div>
+  <div class="dates"> 2004 - 2005 </div>
+  <div class="organization">
+    <a href="http://www.giantbomb.com/tapwave-inc/65-763/">TapWave</a> </div>
+  <div class="description"> Hardware acceleration support for the
+      <a href="Tapwave_Zodiac2_640.jpeg">TapWave
+      Zodiac</a>. </div>
+  <div class="tools"> C, PalmOS, Linux </div>
+  <div class="role"> Sole programmer, PalmOS hardware acceleration
+    project </div>
+  <div class="pictures">
+    <a href="Tapwave_Zodiac2_640.jpeg"
+      class="fancybox" >
+      <img src="Tapwave_Zodiac2_640.jpeg" alt="Tapwave Zodiac" /> </a> </div>
+</div>
+
+<div data-category="professional" data-tags="c">
+  <div class="title">BroadCom Set-Top Boxes</div>
+  <div class="dates"> 2002 - 2003 </div>
+  <div class="organization"> <a href="http://www.broadcom.com">BroadCom</a> </div>
+  <div class="description"> Captioning APIs (CC, CGMS, WSS, TeleText) for
+    various BroadCom cable set-top boxes (including
+    <a href="http://www.broadcom.com/products/BCM97115">97115</a>, 7110)
+  </div>
+  <div class="tools"> C, custom hardware, Linux, ClearCase </div>
+  <div class="role"> Software engineer, individual contributor </div>
+  <div class="pictures">
+    <a href="broadcom-97115.png" class="fancybox"><img src="broadcom-97115.png" /></a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="c">
+  <div class="title">NVidia Graphics Drivers</div>
+  <div class="dates"> 2003 - 2004 </div>
+  <div class="organization"> <a href="http://nvidia.com">NVidia</a> </div>
+  <div class="description"> Linux graphics drivers for iTanium and Intel
+  </div>
+  <div class="tools"> C, Linux, Perforce </div>
+  <div class="role"> Software engineer, individual contributor </div>
+  <div class="pictures">
+    <a href="nvidia_driver_1.png" class="fancybox">
+      <img src="nvidia_driver_1.png" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="c mobile palmos">
+  <div class="title">PalmOS SD Card Support</div>
+  <div class="dates"> 2000 - 2002 </div>
+  <div class="organization"> <a href="http://www.palm.com">Palm</a> </div>
+  <div class="description"> File system and launcher integration of apps
+    on SD cards for PalmOS (launched with m500-series) </div>
+  <div class="tools"> C, PalmOS, MacOS 9, MPW, Perforce </div>
+  <div class="role"> Team engineer, later maintainer of launcher </div>
+  <div class="pictures">
+    <a href="m505.jpg" class="fancybox"> <img src="m505.jpg" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="c mobile palmos">
+  <div class="title">PalmOS HostFS</div>
+  <div class="dates"> 2000 - 2001 </div>
+  <div class="organization"> <a href="http://www.palm.com">Palm</a> </div>
+  <div class="description"> HostFS, a file-system emulator for the PalmOS
+    Emulator</div>
+  <div class="tools"> C, PalmOS, MacOS 9, MPW, Perforce </div>
+  <div class="role"> Original author, primary maintainer </div>
+  <div class="pictures">
+      <a href="pose_1.png" class="fancybox">
+        <img alt="A newer emulator.  The old one was blockier."
+          src="pose_1.png" /> </a>
+  </div>
+</div>
+
+<div data-category="professional" data-tags="c mobile windows">
+  <div class="title">Automated Source-Code Analysis and Generation</div>
+  <div class="dates"> 1999 - 2000 </div>
+  <div class="organization"> <a href="http://nowsol.com/">NOW Solutions</a> </div>
+  <div class="description"> 
+      RIPC, a system to generate CORBA-like pairs of proxies and stubs.
+      It used a Perl script to generate the code from C++ headers, including
+      inheritance information and additional keywords for timing and
+      data handling. </div>
+  <div class="tools"> C++, Perl, WinCE 2.1 </div>
+  <div class="role"> Original author, sole maintainer </div>
+  <div class="pictures"> 
+      <a href="nowsol_3.png" class="fancybox"><img src="nowsol_3.png" /></a>
+      <a href="nowsol_1.png" class="fancybox"><img src="nowsol_1.png" /></a>
+      <a href="nowsol_2.png" class="fancybox"><img src="nowsol_2.png" /></a>
+      <br/> These are from the container-tracking system for which I
+      wrote RIPC
+  </div>
+</div>
+
+<div data-category="professional" data-tags="student c">
+  <div class="title">Callout Tools from a Highly Dynamic Language</div>
+  <div class="dates"> 1995 - 1997 </div>
+  <div class="organization"> The <a href="http://www.cs.cmu.edu/~gwydion/">
+    Gwydion Project</a><br/>
+    <a href="http://www.cmu.edu">Carnegie Mellon University</a>
+    </div>
+  <div class="description"> <a href="http://www.opendylan.org/old-docs/maker-out/melange.htm">
+        Melange</a> C callout tool
+        for <a href="http://www.opendylan.org/">Dylan</a></div>
+  <div class="tools"> C, Dylan, MINDY, d2c, HPUX, AIX </div>
+  <div class="role"> Student programmer </div>
+  <div class="pictures"> 
+      <a href="gwydion-1.png" class="fancybox"><img src="gwydion-1.png" /></a>
+      <a href="gwydion-2.png" class="fancybox"><img src="gwydion-2.png" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="ruby rails">
+  <div class="title">Rails Deploy in an Hour</div>
+  <div class="dates"> 2014 </div>
+  <div class="description">
+    <a href="http://rails-deploy-in-an-hour.com">Rails Deploy in an Hour</a> is
+    a text-and-video technical class on deploying Ruby using Chef, Capistrano,
+    Vagrant and other tools...
+    Easily. There are many introductions to each tool, but RDIAH sets up a
+    reasonable scaffolded Rails server, including all those tools, within less
+    than an hour with all setup. (This product was formerly known as
+    <a href="http://rubymadscience.com">Ruby Mad Science</a>.)
+  </div>
+  <div class="tools"> Ruby, Rails, Chef, Capistrano, Vagrant, Librarian,
+    Camtasia, Wistia, Bootstrap, Octopress, more
+    </div>
+  <div class="role"> Author </div>
+  <div class="pictures">
+    <a href="rails_deploy_1.png" class="fancybox">
+      <img src="rails_deploy_1.png" /></a>
+    <a href="rails_deploy_2.png" class="fancybox">
+      <img src="rails_deploy_2.png" /></a>
+    <a href="rails_deploy_3.png" class="fancybox">
+      <img src="rails_deploy_3.png" /></a>
+    <a href="rails_deploy_4.png" class="fancybox">
+      <img src="rails_deploy_4.png" /></a>
+    <a href="rails_deploy_5.png" class="fancybox">
+      <img src="rails_deploy_5.png" /></a>
+    <a href="rails_deploy_6.png" class="fancybox">
+      <img src="rails_deploy_6.png" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="ruby">
+  <div class="title">Octopress Bootstrap Sites</div>
+  <div class="dates"> 2014 </div>
+  <div class="description">
+    I redesigned <a href="http://codefol.io">Codefol.io</a> and two product sites to use Octopress, and
+    wrote several large batch jobs to reprocess Disqus comments
+    properly for Codefol.io.
+  </div>
+  <div class="tools"> Octopress, Jekyll, Rack, Liquid Markup, Disqus </div>
+  <div class="role"> Author </div>
+  <div class="pictures">
+    <a href="codefolio-1.png" class="fancybox">
+      <img src="codefolio-1.png" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="ruby rails">
+  <div class="title">Rebuilding Rails</div>
+  <div class="dates"> 2012 - 2014 </div>
+  <div class="description"> <a
+  href="http://rebuilding-rails.com">Rebuilding Rails</a>, an ebook on
+    starting your new Rails-like framework from scratch.  &quot;Understand
+    Rails by building Rails!&quot;  It's also one of the best sources
+    of documentation on the Rack framework.
+    I wrote the book.  I wrote the sales site and
+    payment code.  I write all the marketing and analytics tracking.<br/>
+    Rebuilding Rails was also taught as an in-person class to interested
+    OnLive Rubyists for professional development.
+  </div>
+  <div class="tools"> Ruby on Rails, Apple Pages, Stripe.com, Sinatra, Google Analytics </div>
+  <div class="role"> Everything </div>
+  <div class="pictures">
+    <a href="rr_cover.png" class="fancybox">
+      <img src="rr_cover.png" /></a>
+    <a href="rr_site.png" class="fancybox">
+      <img src="rr_site.png" /></a>
+    <a href="rr_old_site.png" class="fancybox">
+      <img src="rr_old_site.png" /></a>
+    <a href="rr_old_buy.png" class="fancybox">
+      <img src="rr_old_buy.png" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="ruby rails javascript">
+  <div class="title">Surveyor</div>
+  <div class="dates"> 2013 </div>
+  <div class="description">
+    <a href="http://github.com/noahgibbs/surveyor">Surveyor</a>,
+    a display server for <a href="http://www.mapeditor.org/">TMX terrain files</a>
+    and graphics from
+    the <a href="http://lpc.opengameart.org/">Liberated Pixel Cup</a>.
+    Most content is via <a href="http://www.sourceoftales.org/">Source of Tales</a>.
+  </div>
+  <div class="tools"> Ruby on Rails, CreateJS (aka Easel)</div>
+  <div class="role"> Author </div>
+  <div class="pictures">
+    <a href="surveyor-1.png" class="fancybox">
+      <img src="surveyor-1.png" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="student c">
+  <div class="title">Parallel Ray-Tracer (student project)</div>
+  <div class="dates"> 1998? </div>
+  <div class="organization"> A class at
+    <a href="http://www.cmu.edu">Carnegie Mellon University</a>
+    </div>
+  <div class="description"> Parallel raytracer for computer science
+    class.  Code by request </div>
+  <div class="tools"> C, Linux, PNM </div>
+  <div class="role"> Author;  server author for distributed version </div>
+  <div class="pictures"> <a href="reflroom.png" class="fancybox">
+    <img src="reflroom.png" /></a> </div>
+</div>
+
+<div data-category="personal" data-tags="javascript">
+  <div class="title">Navier-Stokes Fluid Simulation in JavaScript</div>
+  <div class="dates"> 2011 </div>
+  <div class="description"> <a href="http://github.com/noahgibbs/navier">
+    Navier-Stokes fluid flow simulation</a>
+    in JavaScript, based on Jos Stam's GDC03 code and paper.
+    I added a lot of controls and some modifications like adding
+    walls.
+  </div>
+  <div class="tools"> JavaScript </div>
+  <div class="role"> Author/Modifier </div>
+  <div class="pictures">
+    <a href="navier-1.png" class="fancybox">
+      <img src="navier-1.png" alt="Screenshot" /> </a>
+    <a href="navier-2.png" class="fancybox">
+      <img src="navier-2.png" alt="Screenshot" /> </a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="javascript">
+  <div class="title">This Portfolio</div>
+  <div class="dates"> 2010, 2014 </div>
+  <div class="description"> This JavaScript portfolio.  Uses hashchange,
+    jQuery, animation, fancybox, hand-rolled templating and no dynamic
+    server
+    stuff whatsoever -- it's all
+    javascript and CSS so a Rails failure won't cause problems.  To see
+    how it's done, just view the source of this page.
+    Maybe some day I'll rewrite it in Octopress, like my other sites.
+  </div>
+  <div class="tools"> jQuery, fancybox, Bootstrap </div>
+  <div class="role"> Sole author </div>
+  <div class="pictures">
+    <a href="portfolio-2014.png" class="fancybox">
+      <img src="portfolio-2014.png" /> </a>
+    <a href="portfolio_shot_1.png" class="fancybox">
+      <img src="portfolio_shot_1.png" alt="Screenshot" /> </a>
+    <a href="portfolio_shot_2.png" class="fancybox">
+      <img src="portfolio_shot_2.png" alt="Screenshot" /> </a>
+    <a href="portfolio_shot_3.png" class="fancybox">
+      <img src="portfolio_shot_3.png" alt="Ooh, recursion!" /> </a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="c games">
+  <div class="title">Shanna's Pizza</div>
+  <div class="dates"> 2010 </div>
+  <div class="description"> <a href="https://github.com/noahgibbs/shannas_pizza">Shanna's
+    Pizza</a>, a simple game to teach young
+    children to use logic gates for
+    simple programming.  Minimal text, for ease of use by pre-readers.
+    Written in C with SDL.  Linux and Windows. </div>
+  <div class="tools"> C, Linux, Win32, SDL, VirtualBox, git, MinGW,
+    NullSoft Installer </div>
+  <div class="role"> Sole author </div>
+  <div class="pictures">
+         <a href="pizzawindow.png" class="fancybox">
+           <img src="pizzawindow.png" alt="Early screen 1" /> </a>
+         <a href="pizzawindow2.png" class="fancybox">
+           <img src="pizzawindow2.png" alt="Early screen 2" /> </a>
+         <a href="pizzawindow3.png" class="fancybox">
+           <img src="pizzawindow3.png" alt="Later screen 2" /> </a>
+         <a href="pizzawindow4.png" class="fancybox">
+           <img src="pizzawindow4.png" alt="Later screen 2" /> </a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="rails games">
+  <div class="title">RailsGame, a Server-Push Experiment</div>
+  <div class="dates"> 2009 - 2010 </div>
+  <div class="description"> 
+      <a href="http://noahgibbs.github.com/RailsGame">RailsGame</a>
+      (<a href="http://github.com/noahgibbs/RailsGame">implementation</a>,
+      <a href="http://github.com/noahgibbs/RailsMUD">example</a>),
+      a Juggernaut-based approach to merging a persistent game server with
+      a dynamic web site, sharing content and permitting use of a web client
+      without constant AJAX polling.  A dynamic, persistent browsergame engine.
+  </div>
+  <div class="tools"> Ruby on Rails, Linux, git, Juggernaut (server push),
+    git, MySQL </div>
+  <div class="role"> Sole author </div>
+  <div class="pictures">
+      <a href="astrino_early_2.png" class="fancybox">
+        <img src="astrino_early_2.png" alt="very early screenshot" /></a>
+      <a href="http://noahgibbs.github.com/RailsGame/railsgame_diagram.png"
+        class="fancybox">
+        <img src="http://noahgibbs.github.com/RailsGame/railsgame_diagram.png"
+          alt="design diagram" /> </a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="rails">
+  <div class="title">CheapToad</div>
+  <div class="dates"> 2009-2010 </div>
+  <div class="description"> 
+      <a href="http://github.com/noahgibbs/cheaptoad">CheapToad</a>, a
+      very simple plugin to turn any Rails project into a HopToad
+      exception server with only a few lines of code!  Uses Rails
+      Engines and a gemplugin to make this happen.  Haven't you always
+      wanted an RSS feed of your app exceptions?
+  </div>
+  <div class="tools"> Ruby on Rails, Linux, HopToad, git, MySQL </div>
+  <div class="role"> Sole author </div>
+</div>
+
+<div data-category="personal" data-tags="games">
+  <div class="title">NeoArchaeology, an Early Success at Writing</div>
+  <div class="dates"> 2004, 2009 </div>
+  <div class="description">
+      <a href="http://www.skotos.net/articles/neo.shtml">NeoArchaeology</a>
+      was a column I wrote for <a href="http://skotos.net">Skotos</a> back
+      in 2004.  <a href="http://www.skotos.net/articles/neo3.phtml">one
+      article</a> got SlashDotted, which was gratifying.  I wrote some
+      more recently, to no fanfare whatsoever.
+  </div>
+  <div class="tools"> plain HTML, then my Rails blog </div>
+  <div class="role"> Author.  Edited by Shannon Appelcline </div>
+  <div class="pictures">
+    <a href="neoarchaeology-1.png" class="fancybox">
+      <img src="neoarchaeology-1.png" /></a>
+    <a href="neoarchaeology-2.png" class="fancybox">
+      <img src="neoarchaeology-2.png" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="rails">
+  <div class="title">RailsFrame &mdash; Early Work on Server Automation</div>
+  <div class="dates"> 2011 </div>
+  <div class="description">
+      <a href="http://github.com/noahgibbs/RailsFrame">RailsFrame</a>,
+      a deployment framework to set up a virtual Rails server with
+      Vagrant using a specified set of applications and packages.
+      Useful for things like server-push apps that often have
+      extensively dependencies on other processes running at the same
+      time.
+  </div>
+  <div class="tools"> Ruby on Rails, Vagrant, Chef
+  </div>
+  <div class="role"> Sole author </div>
+</div>
+
+<div data-category="personal" data-tags="rails">
+  <div class="title">Codefol.io before Codefol.io</div>
+  <div class="dates"> 2011 </div>
+  <div class="description">
+    CodeFol.io, a web app to help programmers build simple
+    portfolios, carefully tracked.  Unreleased.
+  </div>
+  <div class="tools"> Ruby on Rails, RSpec, cucumber, factory_girl,
+    Haml, jQuery, git, MailChimp, CloudKick, Linode,
+    Google Analytics and Webmaster Tools
+  </div>
+  <div class="role"> Sole author </div>
+</div>
+
+<div data-category="personal" data-tags="rails">
+  <div class="title">WantMyJob</div>
+  <div class="dates"> 2007 - 2008, 2010 - 2011 </div>
+  <div class="description">
+      <a href="https://github.com/noahgibbs/wantmyjob.com">WantMyJob</a>, a web app for
+      trading suggestions about finding good employers. Ruby on Rails.
+      My first significant Rails app, rewritten multiple times as I
+      improved.  That's why it uses so many different tools :-)
+  </div>
+  <div class="tools"> Ruby on Rails, RSpec, cucumber, factory_girl,
+    jQuery, git, MailChimp, CloudKick, Linode,
+    Google Analytics and Webmaster Tools,
+    MySQL;  previously: OpenID
+  </div>
+  <div class="role"> Sole author </div>
+  <div class="pictures">
+      <a href="WMJ_2010_2.png" class="fancybox">
+        <img src="WMJ_2010_2.png" alt="Late 2010 screenshot" /></a>
+      <a href="WMJ_2010.png" class="fancybox">
+        <img src="WMJ_2010.png" alt="Early 2010 screenshot" /></a>
+      <a href="wmj_screenshot_1.jpg" class="fancybox">
+        <img src="wmj_screenshot_1.jpg" alt="2008 screenshot" /></a>
+      <a href="iHjH.png" class="fancybox">
+        <img src="iHjH.png" alt="2007 screenshot" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="rails">
+  <div class="title">RefactorIt</div>
+  <div class="dates"> 2010 </div>
+  <div class="description"> 
+      <a href="http://github.com/noahgibbs/refactor_it">Refactor It</a>, a
+      very simple web app to let users upload snippets of code, and
+      suggest refactorings of other people's snippets.  It was also a
+      simple Rails 3 app tutorial with blog post
+      (<a href="http://github.com/noahgibbs/refactor_it_tutorial">GitHub
+      repo for tutorial</a>).
+  </div>
+  <div class="tools"> Ruby on Rails, Linux, git, Harsh, Ultraviolet, MySQL </div>
+  <div class="role"> Sole author </div>
+</div>
+
+<div data-category="personal" data-tags="rails">
+  <div class="title">My Blog, the Early Years</div>
+  <div class="dates"> 2009 - 2010 </div>
+  <div class="description"> 
+      <a href="http://codefol.io">blog.angelbob.com, now Codefol.io</a>
+      (<a href="http://github.com/noahgibbs/blog/tree/master">old implementation</a>),
+      a simple Rails-based blog, from scratch.
+      Includes route mappings to translate
+      from old WordPress entries,
+      Disqus comments, tags, and other
+      normal blog features.  Mostly listed for content, not codebase.
+  </div>
+  <div class="tools"> Ruby on Rails, Linux, git, Linode, Google Analytics,
+    Harsh, Ultraviolet, SQLite, HopToad </div>
+  <div class="role"> Sole author, sole content author </div>
+  <div class="pictures">
+      <a href="blog_2009_1.png" class="fancybox">
+        <img src="blog_2009_1.png" alt="2009 screenshot" /></a>
+      <a href="blog_top.png" class="fancybox">
+        <img src="blog_top.png" alt="older top screenshot" /></a>
+      <a href="blog_bottom.png" class="fancybox">
+        <img src="blog_bottom.png" alt="older bottom screenshot" /></a>
+      <a href="blog_show.png" class="fancybox">
+        <img src="blog_show.png" alt="old post with Disqus form" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="ruby">
+  <div class="title">DiffEQ, My First Real RubyGem</div>
+  <div class="dates"> 2006-2007, 2010 </div>
+  <div class="description">
+      <a href="http://diffeq.rubyforge.org">DiffEQ</a>
+      <a href="http://rubyforge.org/projects/diffeq">RubyGem</a>.  Symbolic
+      manipulation, numerical integration, basic graphing of Ordinary
+      Differential Equations.  Includes its own simple algebra package
+      and GNUplot output.
+  </div>
+  <div class="tools"> ruby, Linux, git </div>
+  <div class="role"> Sole author </div>
+  <div class="pictures">
+      <a href="diffeq_code.png" class="fancybox">
+        <img src="diffeq_code.png" alt="simple code excerpt" /></a>
+      <a href="graph_of_exp.png" class="fancybox">
+        <img src="graph_of_exp.png" alt="simple graph output" /></a>
+      <a href="bigvolt.png" class="fancybox">
+        <img src="bigvolt.png" alt="large Lotka-Volterra pred/prey graph" /></a>
+      <a href="smallvolt.png" class="fancybox">
+        <img src="smallvolt.png" alt="small Lotka-Volterra pred/prey graph" /></a>
+      <a href="volterra.rb" class="fancybox">
+        simple ruby code for Lotka-Volterra predator/prey graph </a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="dgd games">
+  <div class="title">Phantasmal, an LPC-alike MUD Library</div>
+  <div class="dates"> 1999 - 2008 </div>
+  <div class="description"> 
+       <a href="http://phantasmal.sf.net">Phantasmal MUDLib</a> for
+       <a href="http://www.dworkin.nl/dgd/">DGD</a>
+  </div>
+  <div class="tools"> dgd, svn </div>
+  <div class="role"> Initial and primary author, primary maintainer until 2008.
+    Now handled by a newer maintainer.</div>
+  <div class="pictures">
+      <a href="phant_1.png" class="fancybox"> <img src="phant_1.png" /></a>
+      <a href="phant_5.png" class="fancybox"> <img src="phant_5.png" /></a>
+      <a href="phant_3.png" class="fancybox"> <img src="phant_3.png" /></a>
+      <a href="phant_2.png" class="fancybox"> <img src="phant_2.png" /></a>
+      <a href="phant_4.png" class="fancybox"> <img src="phant_4.png" /></a>
+      <a href="phant_6.png" class="fancybox"> <img src="phant_6.png" /></a>
+      <a href="phant_7.png" class="fancybox"> <img src="phant_7.png" /></a>
+      <a href="phant_8.png" class="fancybox"> <img src="phant_8.png" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="dgd">
+  <div class="title">DGD Documentation, the Definitive Site</div>
+  <div class="dates"> 1999 - 2008 </div>
+  <div class="description"> 
+      <a href="http://phantasmal.sf.net/DGD">documentation site for DGD
+        programming language</a>.
+      Based on Perl scripts and hand-edited HTML.  Much content was
+      excerpted from the originally unorganized DGD mailing list, but
+      large sections were rewritten or original.  Realistically, this
+      was the most useful thing to grow out of Phantasmal.
+  </div>
+  <div class="tools"> HTML, custom Perl scripts </div>
+  <div class="role"> Sole author </div>
+  <div class="pictures">
+      <a href="dgd_1.png" class="fancybox"> <img src="dgd_1.png" /></a>
+      <a href="dgd_2.png" class="fancybox"> <img src="dgd_2.png" /></a>
+      <a href="dgd_3.png" class="fancybox"> <img src="dgd_3.png" /></a>
+      <a href="dgd_4.png" class="fancybox"> <img src="dgd_4.png" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="c">
+  <div class="title">CrystalSpace Physics Attempts</div>
+  <div class="dates"> 1998 </div>
+  <div class="description"> 
+      Early work on Physics code for
+      <a href="http://www.crystalspace3d.org/main/Main_Page">CrystalSpace</a>,
+      a 3D library
+  </div>
+  <div class="tools"> Linux, C, SVN </div>
+  <div class="role"> Individual contributor </div>
+  <div class="pictures">
+      <a href="csphysics1.png" class="fancybox"><img src="csphysics1.png" /></a>
+      <a href="csphysics2.png" class="fancybox"><img src="csphysics2.png" /></a>
+      <a href="csphysics3.png" class="fancybox"><img src="csphysics3.png" /></a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="silly ruby">
+  <div class="title">Maslow, an AI Experiment</div>
+  <div class="dates"> 2008-2009 </div>
+  <div class="description">
+      Maslow, a simple needs-based AI for evaluating actions and predicting
+      futures.
+  </div>
+  <div class="tools"> Ruby, Linux, git </div>
+  <div class="role"> Sole author </div>
+  <div class="pictures">
+      <a href="maslow_son_output.png" class="fancybox">
+        <img src="maslow_son_output.png" /></a>
+      <a href="son.rb" class="fancybox">Ruby source file for example</a>
+  </div>
+</div>
+
+<div data-category="personal" data-tags="silly javascript">
+  <div class="title">Facelets</div>
+  <div class="dates"> 2007, 2010, 2012 </div>
+  <div class="description">
+      <a href="http://www.angelbob.com/toy/facelets.html">Facelets</a>,
+      a simple JavaScript Canvas webtoy for FireFox and Safari.
+      Later, one of my earliest forays into CoffeeScript as a rewrite.
+  </div>
+  <div class="tools"> JavaScript, HTML5, Prototype, Canvas, CoffeeScript </div>
+  <div class="role"> Sole author </div>
+  <div class="pictures">
+         <a href="face_1.png" class="fancybox"><img src="face_1.png" /></a>
+         <a href="face_2.png" class="fancybox"><img src="face_2.png" /></a>
+         <a href="face_3.png" class="fancybox"><img src="face_3.png" /></a>
+         <br />
+         <a href="http://www.angelbob.com/toy/facelets.html">Click
+          through</a> and play with it!
+  </div>
+</div>
+
+<div data-category="personal" data-tags="silly">
+  <div class="dates"> 2007 </div>
+  <div class="description">
+      <a href="SillyBand.sb">SillyBand</a>, a very quick demo project for
+      <a href="http://scratch.mit.edu">MIT's Scratch</a>.  All media made
+      by me, very, very quickly
+  </div>
+  <div class="tools"> Scratch </div>
+  <div class="role"> Sole author </div>
+  <div class="pictures">
+      <a href="SillyBand.png" class="fancybox"><img src="SillyBand.png" /></a>
+  </div>
+</div>
+
+</div>  <!-- Bootstrap Container -->
+
+</body>

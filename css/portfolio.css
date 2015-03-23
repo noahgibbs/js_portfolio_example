@@ -1,0 +1,47 @@
+.pictures_here img {
+  border: solid 2px black;
+  background-color: white;
+  margin: 0 10px;
+  padding: 20px;
+  max-height: 200px;
+  max-width: 200px;
+}
+
+div#tagbox {
+  position: relative;
+  margin-top: 20px;
+  text-align: center;
+}
+
+div#tagbox a {
+  color: #000000;
+  text-decoration: none;
+}
+
+div.curved {
+  border-radius:8px;
+}
+
+div.small_curved {
+  border-radius:4px;
+}
+
+.hidden {
+  display: none;
+}
+
+.float_right {
+  float: right;
+}
+
+.float_left {
+  float: left;
+}
+
+.clear {
+  clear: both;
+}
+
+.shadow {
+  box-shadow: 3px 3px 4px #000;
+}
