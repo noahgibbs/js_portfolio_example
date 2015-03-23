@@ -19,31 +19,7 @@
 <body>
 
 <script type="text/javascript">
-function get_all_tags(category) {
-  var tags_hash = {};
-
-  $("div[data-category='" + category + "']").each(function(index,elt) {
-    $(elt).attr("data-tags").split(" ").forEach(function(tag) {
-      tags_hash[tag] = true;
-    });
-  });
-
-  return tags_hash;
-}
-
-function find_dates(a) {
-  var date_string = $(a).find("div.dates").html();
-  var all_matches = date_string.match(/\d{4}/g);
-
-  var first_date = parseInt(Math.min.apply(null, all_matches));
-  var last_date = parseInt(Math.max.apply(null, all_matches));
-
-  return [first_date, last_date];
-}
-
 var last_selected = "nobody_at_all";
-var last_tag_selected = "nobody_at_all";
-var tags_shown = {};
 
 function select_major_category(category) {
   if(category.substring(1) == last_selected) return;
@@ -55,14 +31,10 @@ function select_major_category(category) {
   // Hide all divs in previous selected category
   $("div[data-category='" + last_selected + "']:visible").animate({height: 'hide'});
 
-  last_tag_selected = "nobody_at_all";
   last_selected = category.substring(1);
 
   // Show all divs in new category
   $("div[data-category='" + last_selected + "']:hidden").animate({height: 'show'});
-
-  $("#tagbox div").remove();
-  tags_shown = get_all_tags(last_selected);
 
 }
 
